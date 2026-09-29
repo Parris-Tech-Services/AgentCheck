@@ -241,3 +241,9 @@ Current next-stage work includes:
 - OpenTelemetry integration
 - cross-agent reliability history
 - broader hardened-backend coverage beyond the current supported test/Git observations
+
+## Engineering standard
+
+Engineering principles: v5.1  
+Assurance tier: 2  
+Canonical repository: https://github.com/Parris-Tech-Services/AgentCheck
