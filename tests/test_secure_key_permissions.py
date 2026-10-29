@@ -29,6 +29,37 @@ def test_new_private_key_is_0600_under_multiple_umasks(tmp_path, mask):
     assert not signer.verify("modified", signature)
 
 
+def test_public_key_only_collision_fails_before_private_creation(tmp_path):
+    key_dir = tmp_path / "keys"
+    key_dir.mkdir()
+    (key_dir / "public.pem").write_bytes(b"preexisting unrelated public data")
+    with pytest.raises(RuntimeError, match="public key exists without private"):
+        CryptoSigner(key_dir)
+    assert not (key_dir / "private.pem").exists()
+
+
+def test_mismatched_existing_private_and_public_are_rejected(tmp_path):
+    a = CryptoSigner(tmp_path / "a")
+    b = CryptoSigner(tmp_path / "b")
+    (a.public_key_path).write_bytes(b.public_key_path.read_bytes())
+    with pytest.raises(RuntimeError, match="keypair mismatch"):
+        CryptoSigner(a.key_dir)
+
+
+def test_write_failure_cannot_unlink_replaced_key(tmp_path, monkeypatch):
+    key_dir = tmp_path / "keys"
+    key_path = key_dir / "private.pem"
+    replacement = b"another independently created key"
+    def replace_and_fail(_fd):
+        key_path.unlink()
+        key_path.write_bytes(replacement)
+        raise OSError("simulated fsync error")
+    monkeypatch.setattr(os, "fsync", replace_and_fail)
+    with pytest.raises(OSError, match="simulated fsync"):
+        CryptoSigner(key_dir)
+    assert key_path.read_bytes() == replacement
+
+
 def test_reinitialization_never_overwrites_existing_key(tmp_path):
     signer = CryptoSigner(tmp_path / "keys")
     signature = signer.sign("original")
@@ -37,7 +68,7 @@ def test_reinitialization_never_overwrites_existing_key(tmp_path):
     assert same.sign("original") == signature
 
 
-@pytest.mark.skipif(not hasattr(os, "symlink"), reason="symlink unsupported")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX symlink fixtures only")
 def test_private_key_symlink_rejected(tmp_path):
     key_dir = tmp_path / "keys"
     key_dir.mkdir()
@@ -49,7 +80,7 @@ def test_private_key_symlink_rejected(tmp_path):
     assert outside.read_text(encoding="utf-8") == "never modify me"
 
 
-@pytest.mark.skipif(not hasattr(os, "symlink"), reason="symlink unsupported")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX symlink fixtures only")
 def test_public_key_symlink_rejected(tmp_path):
     key_dir = tmp_path / "keys"
     key_dir.mkdir()
@@ -61,7 +92,7 @@ def test_public_key_symlink_rejected(tmp_path):
     assert outside.read_text(encoding="utf-8") == "never modify me"
 
 
-@pytest.mark.skipif(not hasattr(os, "symlink"), reason="symlink unsupported")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX symlink fixtures only")
 def test_directory_symlink_rejected(tmp_path):
     real = tmp_path / "real"
     real.mkdir()
