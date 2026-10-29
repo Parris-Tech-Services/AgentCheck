@@ -24,6 +24,11 @@ class CryptoSigner:
         if self.private_key_path.is_symlink() or self.public_key_path.is_symlink():
             raise ValueError("Signing key files must not be symlinks")
 
+        # A pre-existing public key with no private counterpart is an
+        # incomplete/mismatched keypair, not permission to generate a new one.
+        if not self.private_key_path.exists() and self.public_key_path.exists():
+            raise RuntimeError("Signing keypair incomplete: public key exists without private key")
+
         if not self.private_key_path.exists():
             private_key = ed25519.Ed25519PrivateKey.generate()
             public_key = private_key.public_key()
@@ -42,18 +47,14 @@ class CryptoSigner:
                 os.O_WRONLY | os.O_CREAT | os.O_EXCL,
                 0o600,
             )
-            try:
-                with os.fdopen(fd, "wb") as handle:
-                    handle.write(pem)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-            except BaseException:
-                # Best effort clean-up of a partially created private file.
-                try:
-                    self.private_key_path.unlink()
-                except OSError:
-                    pass
-                raise
+            # On write/fsync failure, fail closed but NEVER unlink the path:
+            # another process might have replaced its directory entry, and
+            # deleting it could destroy unrelated signing material. A partial
+            # private file requires explicit, authorised remediation.
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(pem)
+                handle.flush()
+                os.fsync(handle.fileno())
 
             # The public key is safe to publish, but never overwrite an
             # existing file: an unexpected keypair collision must be visible.
@@ -62,6 +63,23 @@ class CryptoSigner:
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 ))
+
+        # Crash/concurrency and pre-existing-file safety: never sign a receipt
+        # if both files exist but belong to different keypairs.
+        if not self.private_key_path.is_file() or not self.public_key_path.is_file():
+            raise RuntimeError("Signing keypair incomplete; cannot sign or verify")
+        private = self._get_private_key()
+        public = self._get_public_key()
+        expected = private.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        actual = public.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        if expected != actual:
+            raise RuntimeError("Signing private/public keypair mismatch")
 
     def _get_private_key(self):
         with open(self.private_key_path, "rb") as f:
