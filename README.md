@@ -230,6 +230,10 @@ AgentWitness focuses on tamper-evident observation, provenance-aware determinist
 
 AgentWitness is intentionally learning from the open-source agent-verification ecosystem, especially Orthogon AI Labs' `agent-verify`, Vector Institute's `backcheck`, and `blasrodri/truth`. See [`docs/PRIOR_ART.md`](docs/PRIOR_ART.md) for licenses, adopted ideas, and remaining integration ideas.
 
+## Outstanding engineering work
+
+See the [numbered central task register](docs/OUTSTANDING_WORK_2026-10-30.md) for the S02 signing-key security review, existing PR #5 and evidence-based release gates.
+
 ## Roadmap
 
 Current next-stage work includes:
