@@ -14,24 +14,47 @@ class CryptoSigner:
         self._ensure_keys()
 
     def _ensure_keys(self):
-        if not self.key_dir.exists():
-            self.key_dir.mkdir(parents=True, exist_ok=True)
-            
+        # The key directory is private when AgentWitness creates it. Existing
+        # user-managed directories are not silently chmodded or recreated.
+        self.key_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+
         if not self.private_key_path.exists():
             private_key = ed25519.Ed25519PrivateKey.generate()
             public_key = private_key.public_key()
-            
-            with open(self.private_key_path, "wb") as f:
-                f.write(private_key.private_bytes(
+
+            # open(..., "wb") inherits the process umask, which is commonly
+            # 022 and can expose an unencrypted Ed25519 PEM as mode 0644.
+            # O_EXCL prevents replacing an existing key or symlink. Mode
+            # 0600 is enforced at creation on POSIX, regardless of umask.
+            pem = private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            fd = os.open(
+                self.private_key_path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
+            )
+            try:
+                with os.fdopen(fd, "wb") as handle:
+                    handle.write(pem)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+            except BaseException:
+                # Best effort clean-up of a partially created private file.
+                try:
+                    self.private_key_path.unlink()
+                except OSError:
+                    pass
+                raise
+
+            # The public key is safe to publish, but never overwrite an
+            # existing file: an unexpected keypair collision must be visible.
+            with open(self.public_key_path, "xb") as handle:
+                handle.write(public_key.public_bytes(
                     encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()
-                ))
-                
-            with open(self.public_key_path, "wb") as f:
-                f.write(public_key.public_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 ))
 
     def _get_private_key(self):
