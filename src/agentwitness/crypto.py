@@ -16,7 +16,13 @@ class CryptoSigner:
     def _ensure_keys(self):
         # The key directory is private when AgentWitness creates it. Existing
         # user-managed directories are not silently chmodded or recreated.
+        if self.key_dir.is_symlink():
+            raise ValueError("Signing key directory must not be a symlink")
         self.key_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if self.key_dir.is_symlink():
+            raise ValueError("Signing key directory must not be a symlink")
+        if self.private_key_path.is_symlink() or self.public_key_path.is_symlink():
+            raise ValueError("Signing key files must not be symlinks")
 
         if not self.private_key_path.exists():
             private_key = ed25519.Ed25519PrivateKey.generate()
