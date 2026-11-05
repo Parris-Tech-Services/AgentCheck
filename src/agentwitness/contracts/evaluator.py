@@ -163,7 +163,7 @@ class ContractEvaluator:
             return RequirementResult(requirement=req, status=RequirementStatus.ERROR, explanation=f"Unknown requirement type: {req.type}")
             
         if req.type == RequirementType.NO_POLICY_VIOLATIONS:
-            return handler(req, receipts)
+            return handler(req, receipts, actual_min)
             
         return handler(req, valid_receipts)
 
@@ -320,7 +320,7 @@ class ContractEvaluator:
             return RequirementResult(requirement=req, status=RequirementStatus.UNSATISFIED, evidence_receipt_ids=[receipt_id], explanation=f"Current worktree is dirty ({len(state.modified)} changed path(s)).")
         return RequirementResult(requirement=req, status=RequirementStatus.SATISFIED, evidence_receipt_ids=[receipt_id], explanation="Current independently observed worktree is clean.")
 
-    def _eval_no_policy_violations(self, req: Requirement, receipts: list) -> RequirementResult:
+    def _eval_no_policy_violations(self, req: Requirement, receipts: list, minimum_provenance=None) -> RequirementResult:
         violating = [r.receipt_id for r in receipts if r.policy_decision == PolicyDecision.DENY]
         if violating:
             return RequirementResult(requirement=req, status=RequirementStatus.UNSATISFIED, evidence_receipt_ids=violating, explanation="Denied policy actions were recorded in this task session.")
@@ -328,7 +328,18 @@ class ContractEvaluator:
         bypassed = [r.receipt_id for r in receipts if r.policy_evaluation in (PolicyEvaluation.NOT_EVALUATED, PolicyEvaluation.BYPASSED)]
         if bypassed:
             return RequirementResult(requirement=req, status=RequirementStatus.UNVERIFIED, evidence_receipt_ids=bypassed, explanation="Some actions in this session were not evaluated by the policy engine (e.g. transcript imports).")
-            
+
+        # A creation anchor or live observation is not an agent action. Empty
+        # coverage must not certify compliance with the user's restrictions.
+        actions = [r for r in receipts
+                   if r.policy_evaluation == PolicyEvaluation.EVALUATED
+                   and r.execution_status in {ExecutionStatus.SUCCEEDED, ExecutionStatus.FAILED, ExecutionStatus.ERROR}
+                   and not any(self._ev_type(ev) == "contract_creation" for ev in r.environmental_evidence)]
+        minimum = minimum_provenance or req.min_provenance
+        if not actions or any(not self._meets_provenance(r, minimum) for r in actions):
+            return RequirementResult(requirement=req, status=RequirementStatus.UNVERIFIED,
+                                     explanation="No complete trusted coverage of actual policy-evaluated actions exists; contract creation and observations alone cannot establish compliance.")
+
         return RequirementResult(requirement=req, status=RequirementStatus.SATISFIED, explanation="All recorded actions passed policy evaluation.")
 
     def _latest_remote_sha(self, receipts: list) -> Optional[str]:
