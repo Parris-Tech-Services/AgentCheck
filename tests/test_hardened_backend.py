@@ -107,7 +107,7 @@ def test_no_fake_pytest_counts(backend, key_env):
         assert ev.collected is None
         
 def test_unknown_test_count_cannot_satisfy_minimum_collected(backend, key_env, tmp_path):
-    req = Requirement(name="test", type="tests_pass", parameters={"minimum_collected": 1})
+    req = Requirement(type="tests_pass", parameters={"minimum_collected": 1})
     evaluator = ContractEvaluator(Ledger(filepath=tmp_path / "receipts.jsonl"), backend=backend)
     
     with patch.object(backend, "get_tests_evidence") as mock_get:
@@ -117,7 +117,7 @@ def test_unknown_test_count_cannot_satisfy_minimum_collected(backend, key_env, t
         assert "an unknown number of" in res.explanation
 
 def test_zero_test_execution_cannot_satisfy(backend, key_env, tmp_path):
-    req = Requirement(name="test", type="tests_pass", parameters={"minimum_collected": 1})
+    req = Requirement(type="tests_pass", parameters={"minimum_collected": 1})
     evaluator = ContractEvaluator(Ledger(filepath=tmp_path / "receipts.jsonl"), backend=backend)
     
     with patch.object(backend, "get_tests_evidence") as mock_get:
@@ -157,7 +157,7 @@ def test_failed_git_fetch_cannot_produce_remote_verified(backend, key_env):
         assert remote_ev.remote_verified is False
 
 def test_hardened_backend_unavailable_unverified(backend, tmp_path):
-    req = Requirement(name="test", type="tests_pass", parameters={"min_provenance": "HARDENED_OBSERVED"})
+    req = Requirement(type="tests_pass", parameters={"min_provenance": "HARDENED_OBSERVED"})
     evaluator = ContractEvaluator(Ledger(filepath=tmp_path / "receipts.jsonl"), backend=backend)
     
     with patch("requests.post", side_effect=Exception("Offline")):
@@ -215,7 +215,7 @@ def test_malformed_sha_not_verified(backend, key_env):
 
 def test_hardened_offline_with_broker_receipt_unverified(backend, key_env, tmp_path):
     # Requirement implicitly allows BROKER_WITNESSED
-    req = Requirement(name="test", type="tests_pass")
+    req = Requirement(type="tests_pass")
     
     # Existing weaker broker receipt
     receipt = Receipt(
@@ -240,7 +240,7 @@ def test_hardened_offline_with_broker_receipt_unverified(backend, key_env, tmp_p
             assert res.status == RequirementStatus.UNVERIFIED
 
 def test_hardened_valid_receipt_satisfies(backend, key_env, tmp_path):
-    req = Requirement(name="test", type="tests_pass")
+    req = Requirement(type="tests_pass")
     
     # Valid hardened backend observation
     receipt = Receipt(
