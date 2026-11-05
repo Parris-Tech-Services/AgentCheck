@@ -32,6 +32,8 @@ def task_create(file: str = typer.Argument(...)):
     unknown = set(data) - set(TaskContract.model_fields)
     if unknown:
         raise ValueError("Unsupported contract fields would be lost: " + ", ".join(sorted(unknown)))
+    if data.get("contract_version", 3) != 3:
+        raise ValueError("CLI creation requires anchored contract_version 3; legacy versions are read-only")
 
     reqs = []
     for r_data in data.get("requirements", []):
@@ -56,7 +58,7 @@ def task_create(file: str = typer.Argument(...)):
         session_id=data.get("session_id", data["task_id"]),
         title=data.get("title", data["task_id"]),
         requirements=reqs,
-        created_at=datetime.now(timezone.utc).isoformat(),
+        created_at=data.get("created_at", datetime.now(timezone.utc).isoformat()),
     )
 
     storage = ContractStorage()

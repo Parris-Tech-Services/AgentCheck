@@ -56,6 +56,7 @@ class CompletionIntegrityRegression(unittest.TestCase):
         path = Path(self.temp.name) / 'contract.yaml'
         for suffix in ('exclusions: [No correspondence]\nrequirements: [{type: tests_pass}]\n',
                        'requirements: []\n',
+                       'contract_version: 1\nrequirements: [{type: tests_pass}]\n',
                        'requirements: [{type: tests_pass, exclusion: No correspondence}]\n'):
             with self.subTest(suffix=suffix):
                 path.write_text('task_id: original\n' + suffix)

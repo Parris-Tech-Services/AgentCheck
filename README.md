@@ -267,3 +267,6 @@ exclusions or live deployment correctness. Unsupported `exclusions` fields fail
 explicitly; a passing supported contract cannot certify those absent checks.
 
 Regression: `PYTHONPATH=src python -m unittest discover -s tests -p test_completion_integrity.py -v`.
+Arbitrary keys inside `parameters` are still governed by each supported evaluator;
+they do not add new semantic checks. New CLI contracts require schema v3; legacy
+versions remain readable but cannot be used to bypass creation anchoring.
