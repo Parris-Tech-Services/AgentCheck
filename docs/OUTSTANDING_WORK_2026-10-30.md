@@ -69,3 +69,7 @@ Baseline reproduction: a legacy contract with no requirements evaluated DONE; an
 Executed locally: `PYTHONPATH=src python -m pytest -q` — 93 passed, 5 skipped (external Windows/notary environment), 6 subtests passed. New `tests/test_completion_integrity.py` uses real signed contracts/receipts to reject missing criteria and forged evidence, reject unsupported exclusions, preserve an unfinished objective across storage reload, and accept valid observed evidence. Existing hardened tests used an ignored `name` argument; five fixture calls now use the actual schema.
 
 Status: PARTIALLY COMPLETE pending independent review, remote exact-head verification and safe merge. No automatic workflow was enabled, protected Windows installation changed or live deployment claimed. Semantic interpretation of research exclusions remains unsupported: rejecting unknown fields prevents silent loss but does not independently judge arbitrary deliverables. Existing AW-GR security tasks remain open.
+
+### Completion integrity scope release
+
+PR #6 merged at `c90658fad75f09b0b370794626f2fa3e3b0e279d` after independent root-agent review and a fresh full suite (93 passed, 5 unavailable Windows/notary checks skipped, 6 subtests). All eight repaired files were read back from canonical main and matched tested source. This narrow implementation claim is RELEASED. Existing AW-GR-002–007 and unsupported semantic/live-runtime acceptance remain open; overall system effectiveness is not claimed.
