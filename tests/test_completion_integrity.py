@@ -16,7 +16,7 @@ from agentwitness.contracts.storage import ContractStorage
 from agentwitness.contracts.evaluator import ContractEvaluator
 from agentwitness.crypto import CryptoSigner
 from agentwitness.ledger import Ledger
-from agentwitness.models import ExecutionStatus, PolicyDecision, Receipt, RemoteGitEvidence
+from agentwitness.models import ExecutionStatus, PolicyDecision, Receipt, RemoteGitEvidence, PolicyEvaluation, Provenance
 
 
 class CompletionIntegrityRegression(unittest.TestCase):
@@ -90,6 +90,24 @@ class CompletionIntegrityRegression(unittest.TestCase):
         resumed = ContractStorage(self.storage.directory, self.ledger).load(contract.task_id)
         self.assertEqual(resumed.canonical_hash(), contract.canonical_hash())
         self.assertEqual(ContractEvaluator(self.ledger).evaluate(resumed).status,
+                         TaskStatus.READY_FOR_VERIFICATION)
+
+    def test_policy_requires_actual_trusted_evaluated_actions(self):
+        req = Requirement(type=RequirementType.NO_POLICY_VIOLATIONS)
+        empty = self.contract([req], contract_version=1)
+        self.assertEqual(ContractEvaluator(self.ledger).evaluate(empty).status,
+                         TaskStatus.READY_FOR_VERIFICATION)
+        contract = self.contract([req])
+        self.storage.save(contract)
+        self.assertEqual(ContractEvaluator(self.ledger).evaluate(contract).status,
+                         TaskStatus.READY_FOR_VERIFICATION)
+        self.ledger.append(Receipt(receipt_id='actual-action', session_id='original',
+            timestamp_start='t', timestamp_end='t', cwd='/', resolved_executable='echo', argv=['ok'],
+            policy_evaluation=PolicyEvaluation.EVALUATED, policy_decision=PolicyDecision.ALLOW,
+            execution_status=ExecutionStatus.SUCCEEDED, provenance=Provenance.BROKER_WITNESSED))
+        self.assertEqual(ContractEvaluator(self.ledger).evaluate(contract).status, TaskStatus.DONE)
+        self.assertEqual(ContractEvaluator(self.ledger).evaluate(contract,
+                         min_provenance_floor=Provenance.HARDENED_OBSERVED).status,
                          TaskStatus.READY_FOR_VERIFICATION)
 
 

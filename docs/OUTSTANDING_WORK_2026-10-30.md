@@ -73,3 +73,9 @@ Status: PARTIALLY COMPLETE pending independent review, remote exact-head verific
 ### Completion integrity scope release
 
 PR #6 merged at `c90658fad75f09b0b370794626f2fa3e3b0e279d` after independent root-agent review and a fresh full suite (93 passed, 5 unavailable Windows/notary checks skipped, 6 subtests). All eight repaired files were read back from canonical main and matched tested source. This narrow implementation claim is RELEASED. Existing AW-GR-002–007 and unsupported semantic/live-runtime acceptance remain open; overall system effectiveness is not claimed.
+
+### 6 November policy-coverage follow-up
+
+Owner: ChatGPT Work independent audit agent, branch `fix/require-observed-policy-actions`. Independent review of the original mission found a remaining vacuous success: no-policy checks accepted zero receipts or only a creation anchor. The existing handler now requires actual attempted policy-evaluated actions with the effective required provenance; anchors and observations alone remain UNVERIFIED. DENY and BYPASSED/NOT_EVALUATED precedence remains unchanged. This checks recorded actions, not actions outside AgentWitness.
+
+Fresh local full suite: 94 passed, 5 external Windows/notary checks skipped, 6 subtests. Actual signed contract regression covers empty session, anchor-only session, broker-observed positive and hardened-floor refusal. Pending root independent review and safe merge; this narrow follow-up claim releases on successful merge. Existing AW-GR tasks and semantic-original-prompt gaps remain open.
