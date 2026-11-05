@@ -27,6 +27,12 @@ def task_create(file: str = typer.Argument(...)):
     with open(file, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
+    if not isinstance(data, dict):
+        raise ValueError("Task contract must be a mapping")
+    unknown = set(data) - set(TaskContract.model_fields)
+    if unknown:
+        raise ValueError("Unsupported contract fields would be lost: " + ", ".join(sorted(unknown)))
+
     reqs = []
     for r_data in data.get("requirements", []):
         req_type = RequirementType(r_data["type"])
@@ -38,14 +44,12 @@ def task_create(file: str = typer.Argument(...)):
         if req_type in {RequirementType.REMOTE_SHA_MATCH, RequirementType.CLEAN_WORKTREE}:
             parameters.setdefault("live", True)
 
-        kwargs = {
-            "type": req_type,
-            "required": r_data.get("required", True),
-            "parameters": parameters,
-        }
-        if r_data.get("requirement_id"):
-            kwargs["requirement_id"] = r_data["requirement_id"]
+        kwargs = dict(r_data)
+        kwargs.update(type=req_type, parameters=parameters)
         reqs.append(Requirement(**kwargs))
+
+    if not any(req.required for req in reqs):
+        raise ValueError("At least one mandatory acceptance requirement is required")
 
     contract = TaskContract(
         task_id=data["task_id"],

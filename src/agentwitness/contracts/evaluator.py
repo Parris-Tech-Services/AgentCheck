@@ -90,7 +90,13 @@ class ContractEvaluator:
         self._active_session = contract.session_id
         all_receipts = self.ledger.read_all()
 
-        anchor_error = self._anchor_error(contract, all_receipts)
+        anchor_error = None
+        if not self.ledger.verify_chain(all_receipts):
+            anchor_error = "Untrusted evidence: receipt signatures or hash chain are invalid."
+        if anchor_error is None:
+            anchor_error = self._anchor_error(contract, all_receipts)
+        if anchor_error is None and not any(req.required for req in contract.requirements):
+            anchor_error = "Incomplete contract: at least one mandatory acceptance requirement is required."
         if anchor_error:
             system_req = Requirement(requirement_id="system-contract-integrity", type=RequirementType.NO_POLICY_VIOLATIONS)
             return TaskEvaluation(

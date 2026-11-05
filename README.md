@@ -251,3 +251,19 @@ Current next-stage work includes:
 Engineering principles: v5.1  
 Assurance tier: 2  
 Canonical repository: https://github.com/Parris-Tech-Services/AgentCheck
+
+## Completion integrity boundaries (6 November 2026)
+
+The task create path rejects unsupported top-level and requirement fields rather
+than silently dropping them. A contract must contain a mandatory requirement to
+be accepted as complete. Evaluation validates signatures and the hash chain of
+the exact receipt snapshot before trusting anchors or test/Git evidence. Legacy
+anchored schema hashes remain unchanged; empty legacy contracts remain readable
+but evaluate BLOCKED.
+
+This is not semantic verification of arbitrary user instructions. The supported
+requirement types do not independently judge research deliverables, correspondence
+exclusions or live deployment correctness. Unsupported `exclusions` fields fail
+explicitly; a passing supported contract cannot certify those absent checks.
+
+Regression: `PYTHONPATH=src python -m unittest discover -s tests -p test_completion_integrity.py -v`.

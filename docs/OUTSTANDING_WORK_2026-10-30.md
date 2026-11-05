@@ -59,3 +59,13 @@
 
 ## Work handoff
 **Suggested order:** `AW-GR-003` → `AW-GR-004` → `AW-GR-005` → `AW-GR-002` / `AW-GR-007`; investigate `AW-GR-006` separately with owner approval. **No source fixes, live key inspection, merge or deployment were performed by this audit.**
+
+## 6 November 2026 — completion integrity repair scope
+
+Owner: ChatGPT Work independent audit agent; branch `fix/reject-vacuous-completion-contracts`, based on `6bef2d37375ce2490118c658dd86ecefb101edfa`. Narrow scope: existing contract parsing/evaluation and receipt-chain verification. PR #5 signing-key work is preserved and remains separately owned.
+
+Baseline reproduction: a legacy contract with no requirements evaluated DONE; an unsupported `exclusions` field disappeared. Existing evaluator read signed receipts without calling the chain verifier. Repairs reject unsupported contract/requirement fields, block empty/all-optional acceptance, and verify the exact receipt snapshot before evaluation. CLI now preserves explicit requirement provenance rather than discarding it.
+
+Executed locally: `PYTHONPATH=src python -m pytest -q` — 93 passed, 5 skipped (external Windows/notary environment), 5 subtests passed. New `tests/test_completion_integrity.py` uses real signed contracts/receipts to reject missing criteria and forged evidence, reject unsupported exclusions, preserve an unfinished objective across storage reload, and accept valid observed evidence. Existing hardened tests used an ignored `name` argument; five fixture calls now use the actual schema.
+
+Status: PARTIALLY COMPLETE pending independent review, remote exact-head verification and safe merge. No automatic workflow was enabled, protected Windows installation changed or live deployment claimed. Semantic interpretation of research exclusions remains unsupported: rejecting unknown fields prevents silent loss but does not independently judge arbitrary deliverables. Existing AW-GR security tasks remain open.
