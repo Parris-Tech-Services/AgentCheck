@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import hashlib
 import json
 import uuid
@@ -37,6 +37,7 @@ class TaskStatus(str, Enum):
 from agentwitness.models import Provenance
 
 class Requirement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     requirement_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: RequirementType
     required: bool = True
@@ -52,6 +53,9 @@ class RequirementResult(BaseModel):
 
 
 class TaskContract(BaseModel):
+    # Unknown objective/exclusion fields must fail explicitly, never disappear
+    # while an agent believes the signed contract preserved them.
+    model_config = ConfigDict(extra="forbid")
     contract_version: int = 3
     task_id: str
     session_id: str

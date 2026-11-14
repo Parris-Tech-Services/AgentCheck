@@ -65,8 +65,10 @@ class Ledger:
                     receipts.append(Receipt.model_validate(data))
         return receipts
 
-    def verify_chain(self) -> bool:
-        receipts = self.read_all()
+    def verify_chain(self, receipts: Optional[List[Receipt]] = None) -> bool:
+        # Callers may verify the exact snapshot they are about to evaluate.
+        if receipts is None:
+            receipts = self.read_all()
         expected_prev_hash = "0000000000000000000000000000000000000000000000000000000000000000"
         
         for receipt in receipts:
