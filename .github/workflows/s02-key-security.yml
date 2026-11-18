@@ -1,0 +1,31 @@
+name: S02 Signing key permission regression
+on:
+  push:
+    paths:
+      - 'src/agentwitness/crypto.py'
+      - 'tests/test_secure_key_permissions.py'
+      - '.github/workflows/s02-key-security.yml'
+  pull_request:
+    paths:
+      - 'src/agentwitness/crypto.py'
+      - 'tests/test_secure_key_permissions.py'
+      - '.github/workflows/s02-key-security.yml'
+permissions:
+  contents: read
+jobs:
+  posix-keys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install AgentWitness and pytest
+        run: python -m pip install -e . pytest
+      - name: Exercise real signing-key permission checks
+        run: python -m pytest -q tests/test_secure_key_permissions.py
+      - name: Compile changed code
+        run: python -m compileall -q src/agentwitness/crypto.py tests/test_secure_key_permissions.py
