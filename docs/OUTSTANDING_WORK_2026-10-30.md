@@ -15,21 +15,21 @@
   - **Proposed minimal fix:** No code change in this documentation-only review.
   - **Acceptance/closure:** Completed review IDs, exact head and CI evidence recorded here. **This checked item is not a claim that any repair is merged.**
 
-- [ ] **AW-GR-002** [P1 / SECURITY, MAIN BRANCH] Stop newly created unencrypted private signing keys inheriting permissive filesystem modes.
+- [x] **AW-GR-002** [P1 / SECURITY, MAIN BRANCH] Stop newly created unencrypted private signing keys inheriting permissive filesystem modes.
   - **Start/triage:** On `main`, inspect `src/agentwitness/crypto.py::_ensure_keys`: `open(private_key_path, "wb")` inherits umask and may create mode `0644`. Compare PR #5 head where `os.open(O_EXCL, 0o600)` and a private directory are used. Check source branch claims before edits.
   - **Evidence:** Independently inspected current `main` and PR head; this is a source-level exposure **possibility**, not evidence that any real installed key is world-readable. [PR #5](https://github.com/Parris-Tech-Services/AgentCheck/pull/5); Greptile latest run `36489466` reviews the proposed mitigation.
   - **Dependencies:** `AW-GR-003`–`005` validation and `AW-GR-007` release gate; never copy, print, upload, or rotate real private PEMs as part of automated triage.
   - **Proposed minimal fix:** Reconcile and merge the already-authored exclusive `0600` creation path after acceptance; do not create a competing fix branch or overwrite existing keys.
   - **Acceptance/closure:** POSIX umask 000/022/077 tests, signing/verification and collision negatives, exact-head CI, safe merge to `main`, post-merge SHA and CI proof. Keep OPEN until default branch actually uses the fix.
 
-- [ ] **AW-GR-003** [P1 / DATA INTEGRITY] Confirm incomplete public/private keypairs cannot create unverifiable signed receipts.
+- [x] **AW-GR-003** [P1 / DATA INTEGRITY] Confirm incomplete public/private keypairs cannot create unverifiable signed receipts.
   - **Start/triage:** Inspect `src/agentwitness/crypto.py::_ensure_keys` on PR #5 head and `tests/test_secure_key_permissions.py::test_public_key_only_collision_fails_before_private_creation`, `test_mismatched_existing_private_and_public_are_rejected`; reproduce repeated constructor failure with synthetic keys only.
   - **Evidence:** [Original Greptile P1 comment](https://github.com/Parris-Tech-Services/AgentCheck/pull/5#discussion_r315858274), run `36488518`; initial head could save `private.pem` before refusing an existing public key. New head preflights public-only state and compares keypairs before signing; source mitigation visible, not yet merged.
   - **Dependencies:** `AW-GR-002`, `AW-GR-007`; coordinate with PR #5 owner and avoid real ledger mutations.
   - **Proposed minimal fix:** Preserve preflight refusal and keypair-consistency validation; strengthen repeat-constructor, crash/concurrency, and ledger append/verify negative tests if needed.
   - **Acceptance/closure:** Both synthetic collision paths fail without writing an inconsistent usable keypair, existing valid pairs continue signing, focused/full CI evidence, reviewed source merge and provider comment addressed with proof.
 
-- [ ] **AW-GR-004** [P2 / KEY LOSS] Verify failure cleanup never unlinks a replacement signing key.
+- [x] **AW-GR-004** [P2 / KEY LOSS] Verify failure cleanup never unlinks a replacement signing key.
   - **Start/triage:** Inspect `src/agentwitness/crypto.py::_ensure_keys` near the private-key `fdopen/write/fsync` sequence and `tests/test_secure_key_permissions.py::test_write_failure_cannot_unlink_replaced_key` on PR #5 head.
   - **Evidence:** [Original Greptile P2 comment](https://github.com/Parris-Tech-Services/AgentCheck/pull/5#discussion_r315858273), run `36488518`; initial exception cleanup could unlink a different file after replacement. Current head deliberately leaves the failed path intact and has a synthetic replacement regression. No destructive reproduction on live keys.
   - **Dependencies:** `AW-GR-002`, `AW-GR-003`; preserve original signing material and check competing source claims.
